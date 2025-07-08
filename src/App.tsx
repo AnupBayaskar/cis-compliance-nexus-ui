@@ -1,25 +1,58 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
+import ModernSidebar from "@/components/layout/ModernSidebar";
+import ModernNavbar from "@/components/layout/ModernNavbar";
+import Home from "./pages/Home";
+import Benchmarks from "./pages/Benchmarks";
+import Compliance from "./pages/Compliance";
+import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
-
+import Reports from "./pages/Reports";
+import SavedConfigurations from "./pages/SavedConfigurations";
+import { ConfigurationProvider } from './context/ConfigurationContext';
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <ThemeProvider>
+          <Toaster />
+          <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+        <ConfigurationProvider>
+
+          
+
+            <div className="min-h-screen bg-background">
+              <ModernNavbar />
+              <ModernSidebar />
+              <main className="ml-20 pt-16 min-h-screen">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/benchmarks" element={<Benchmarks />} />
+                  <Route path="/compliance" element={<Compliance />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/saved-configurations" element={<SavedConfigurations />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+            </div>
+          </ConfigurationProvider>
+          </BrowserRouter>
+
+        </AuthProvider>
+
+      </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
