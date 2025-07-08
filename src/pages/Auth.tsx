@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -23,8 +24,13 @@ const Auth = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const validatePassword = (password: string) => {
-    return password.length >= 6; // Match backend MinLength(6)
+    return password.length >= 6;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,6 +38,25 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
+      // Validation
+      if (!validateEmail(formData.email)) {
+        toast({
+          title: 'Invalid email',
+          description: 'Please enter a valid email address.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!validatePassword(formData.password)) {
+        toast({
+          title: 'Invalid password',
+          description: 'Password must be at least 6 characters long.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       if (isLogin) {
         const result = await login(formData.email, formData.password);
         if (result) {
@@ -51,10 +76,10 @@ const Auth = () => {
           return;
         }
 
-        if (!validatePassword(formData.password)) {
+        if (!formData.name.trim()) {
           toast({
-            title: 'Invalid password',
-            description: 'Password must be at least 6 characters long.',
+            title: 'Name required',
+            description: 'Please enter your full name.',
             variant: 'destructive',
           });
           return;
@@ -70,7 +95,7 @@ const Auth = () => {
         }
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Something went wrong. Please try again.';
+      const errorMessage = error.message || 'Something went wrong. Please try again.';
       toast({
         title: isLogin ? 'Login failed' : 'Registration failed',
         description: errorMessage,
@@ -85,6 +110,17 @@ const Auth = () => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
+    });
+  };
+
+  const switchMode = () => {
+    setIsLogin(!isLogin);
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      phone: '',
     });
   };
 
@@ -113,7 +149,7 @@ const Auth = () => {
             {!isLogin && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name">Full Name *</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -124,7 +160,7 @@ const Auth = () => {
                       value={formData.name}
                       onChange={handleInputChange}
                       className="pl-10"
-                      required={!isLogin}
+                      required
                     />
                   </div>
                 </div>
@@ -147,7 +183,7 @@ const Auth = () => {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email Address *</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -164,14 +200,14 @@ const Auth = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Password *</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
                   name="password"
                   type="password"
-                  placeholder="Enter your password"
+                  placeholder="Enter your password (min 6 characters)"
                   value={formData.password}
                   onChange={handleInputChange}
                   className="pl-10"
@@ -182,7 +218,7 @@ const Auth = () => {
 
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">Confirm Password *</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -193,7 +229,7 @@ const Auth = () => {
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     className="pl-10"
-                    required={!isLogin}
+                    required
                   />
                 </div>
               </div>
@@ -212,7 +248,7 @@ const Auth = () => {
             </p>
             <Button
               variant="link"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={switchMode}
               className="p-0 h-auto font-semibold"
             >
               {isLogin ? 'Create one now' : 'Sign in instead'}

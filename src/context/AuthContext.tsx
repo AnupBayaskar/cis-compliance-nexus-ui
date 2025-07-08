@@ -1,5 +1,5 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import axios from 'axios';
 
 interface AuthContextType {
   user: { user_id: string; name: string; email: string } | null;
@@ -15,8 +15,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<{ user_id: string; name: string; email: string } | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
-  const API_BASE_URL ='http://localhost:3000';
-
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
@@ -25,7 +23,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const parsedUser = JSON.parse(storedUser);
         setToken(storedToken);
         setUser(parsedUser);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
       } catch (error) {
         console.error('Failed to parse stored user:', error);
         localStorage.removeItem('token');
@@ -35,37 +32,67 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await axios.post<{ accessToken: string; user: { user_id: string; name: string; email: string } }>(
-      `${API_BASE_URL}/auth/login`,
-      { email, password }
-    );
-    const { accessToken, user } = response.data;
-    setToken(accessToken);
-    setUser(user);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-    localStorage.setItem('token', accessToken);
-    localStorage.setItem('user', JSON.stringify(user));
-    return { user };
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Check if user exists in localStorage
+    const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+    const existingUser = existingUsers.find((u: any) => u.email === email && u.password === password);
+    
+    if (!existingUser) {
+      throw new Error('Invalid email or password');
+    }
+
+    const mockToken = 'mock-jwt-token-' + Date.now();
+    const userData = {
+      user_id: existingUser.user_id,
+      name: existingUser.name,
+      email: existingUser.email
+    };
+
+    setToken(mockToken);
+    setUser(userData);
+    localStorage.setItem('token', mockToken);
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    return { user: userData };
   };
 
   const register = async (name: string, email: string, password: string, phone?: string) => {
-    const response = await axios.post<{ accessToken: string; user: { user_id: string; name: string; email: string } }>(
-      `${API_BASE_URL}/auth/register`,
-      { name, email, password, phone }
-    );
-    const { accessToken, user } = response.data;
-    setToken(accessToken);
-    setUser(user);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-    localStorage.setItem('token', accessToken);
-    localStorage.setItem('user', JSON.stringify(user));
-    return { user };
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Check if user already exists
+    const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+    const userExists = existingUsers.find((u: any) => u.email === email);
+    
+    if (userExists) {
+      throw new Error('User with this email already exists');
+    }
+
+    const mockToken = 'mock-jwt-token-' + Date.now();
+    const userData = {
+      user_id: 'user-' + Date.now(),
+      name,
+      email
+    };
+
+    // Store user in registered users list
+    const newUser = { ...userData, password, phone };
+    existingUsers.push(newUser);
+    localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
+
+    setToken(mockToken);
+    setUser(userData);
+    localStorage.setItem('token', mockToken);
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    return { user: userData };
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
-    delete axios.defaults.headers.common['Authorization'];
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
