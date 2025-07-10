@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Modal from '@/components/ui/modal';
 import { useAuth } from '@/context/AuthContext';
+import { useRBAC } from '@/context/RBACContext';
 import { 
   Plus, Search, Download, CheckCircle, X, HelpCircle, Server, Save, AlertCircle, 
   RotateCcw, OctagonX, Eraser, Check, FileText, Users 
@@ -45,6 +46,7 @@ interface ComplianceCheck {
 
 const Compliance = () => {
   const { user, token, logout } = useAuth();
+  const { currentUser, getCurrentUserTeams } = useRBAC();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [devices, setDevices] = useState<Device[]>([]);
@@ -57,8 +59,8 @@ const Compliance = () => {
   const [showSaveConfig, setShowSaveConfig] = useState(false);
   const [configName, setConfigName] = useState('');
   const [configComments, setConfigComments] = useState('');
-  const [teams] = useState(['Team A', 'Team B', 'Team C', 'Team D']);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [availableTeams, setAvailableTeams] = useState<Array<{id: string, name: string}>>([]);
   const [newDevice, setNewDevice] = useState({
     uuid: crypto.randomUUID(),
     type: 'os' as 'os' | 'service',
@@ -82,6 +84,14 @@ const Compliance = () => {
   const deviceNameOptions = Array.from(new Set(devices.map(d => d.machine_name).filter(Boolean)));
 
   const API_BASE_URL = 'http://localhost:3000';
+
+  // Load available teams based on current user's role
+  useEffect(() => {
+    if (currentUser) {
+      const userTeams = getCurrentUserTeams();
+      setAvailableTeams(userTeams.map(team => ({ id: team.id, name: team.name })));
+    }
+  }, [currentUser, getCurrentUserTeams]);
 
   useEffect(() => {
     if (user && token && user.user_id) {
@@ -400,6 +410,9 @@ const Compliance = () => {
   const canGenerateReport = selectedDevice && checks.every(check => check.status !== null);
   const canSaveConfiguration = selectedDevice && checks.some(check => check.status !== null);
 
+  // Check if user has permission to access compliance check
+  const hasComplianceAccess = currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin');
+
   if (!user || !token) {
     return (
       <div className="min-h-screen flex items-center justify-center section-padding">
@@ -421,6 +434,28 @@ const Compliance = () => {
     );
   }
 
+  // Restrict access for regular users
+  if (currentUser?.role === 'user') {
+    return (
+      <div className="min-h-screen flex items-center justify-center section-padding">
+        <Card className="max-w-md w-full text-center">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-center space-x-2">
+              <AlertCircle className="h-6 w-6 text-amber-500" />
+              <span>Access Restricted</span>
+            </CardTitle>
+            <CardDescription>You don't have permission to access compliance checks. Only administrators can perform compliance checks.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate('/')} className="w-full">
+              Go to Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const filteredChecks = checks.filter(
     check =>
       check.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -432,7 +467,10 @@ const Compliance = () => {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Select Team</h1>
+            <h1 className="text-4xl font-bold mb-2">Compliance Check</h1>
+            <p className="text-muted-foreground">
+              Role: {currentUser?.role?.replace('_', ' ').toUpperCase()} | Select team and device for compliance check
+            </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => setShowHelp(true)}>
             <HelpCircle className="mr-2 h-4 w-4" />
@@ -440,93 +478,37 @@ const Compliance = () => {
           </Button>
         </div>
 
+        {/* Team Selection */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Users className="h-6 w-6" />
-              <span>Teams</span>
+              <span>Select Team</span>
             </CardTitle>
-            <CardDescription>Select a team to manage</CardDescription>
+            <CardDescription>Choose a team to manage compliance for</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {teams.map(team => (
-                <Card
-                  key={team}
-                  className={`cursor-pointer transition-all ${
-                    selectedTeam === team
-                      ? 'ring-2 ring-brand-green bg-brand-green/5'
-                      : 'hover:shadow-md'
-                  }`}
-                  onClick={() => setSelectedTeam(team)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-5 w-5 text-muted-foreground" />
-                      <h4 className="font-semibold">{team}</h4>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Server className="h-6 w-6" />
-              <span>Select Device</span>
-            </CardTitle>
-            <CardDescription>Choose a device to perform compliance check</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
+            {availableTeams.length === 0 ? (
               <div className="text-center py-4">
-                <p className="text-muted-foreground">Loading devices...</p>
-              </div>
-            ) : devices.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-muted-foreground">No devices found.</p>
+                <p className="text-muted-foreground">No teams available. Please create a team first in the Admin panel.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {devices.map(device => (
+                {availableTeams.map(team => (
                   <Card
-                    key={device.device_id}
+                    key={team.id}
                     className={`cursor-pointer transition-all ${
-                      selectedDevice?.device_id === device.device_id
+                      selectedTeam === team.id
                         ? 'ring-2 ring-brand-green bg-brand-green/5'
                         : 'hover:shadow-md'
                     }`}
-                    onClick={() => setSelectedDevice(device)}
+                    onClick={() => setSelectedTeam(team.id)}
                   >
                     <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold">{device.machine_name}</h4>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={device.status === 'active' ? 'default' : 'secondary'}>
-                            {device.status}
-                          </Badge>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="ml-2"
-                            title="Delete Device"
-                            onClick={e => {
-                              e.stopPropagation();
-                              handleDeleteDevice(device.device_id);
-                            }}
-                          >
-                            <Eraser className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                        <h4 className="font-semibold">{team.name}</h4>
                       </div>
-                      <p className="text-sm text-muted-foreground">{device.device_subtype}</p>
-                      <p className="text-sm text-muted-foreground">{device.ip_address}</p>
-                      {device.owner_name && (
-                        <p className="text-sm text-muted-foreground">Owner: {device.owner_name}</p>
-                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -535,6 +517,86 @@ const Compliance = () => {
           </CardContent>
         </Card>
 
+        {/* Device Selection - only show if team is selected */}
+        {selectedTeam && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Server className="h-6 w-6" />
+                <span>Select Device</span>
+              </CardTitle>
+              <CardDescription>Choose a device to perform compliance check</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">Loading devices...</p>
+                </div>
+              ) : devices.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">No devices found. Add a device first.</p>
+                  <Button onClick={() => setShowAddDevice(true)} className="mt-2">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Device
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-medium">Available Devices</h4>
+                    <Button onClick={() => setShowAddDevice(true)} size="sm">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Device
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {devices.map(device => (
+                      <Card
+                        key={device.device_id}
+                        className={`cursor-pointer transition-all ${
+                          selectedDevice?.device_id === device.device_id
+                            ? 'ring-2 ring-brand-green bg-brand-green/5'
+                            : 'hover:shadow-md'
+                        }`}
+                        onClick={() => setSelectedDevice(device)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-semibold">{device.machine_name}</h4>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={device.status === 'active' ? 'default' : 'secondary'}>
+                                {device.status}
+                              </Badge>
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="ml-2"
+                                title="Delete Device"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleDeleteDevice(device.device_id);
+                                }}
+                              >
+                                <Eraser className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{device.device_subtype}</p>
+                          <p className="text-sm text-muted-foreground">{device.ip_address}</p>
+                          {device.owner_name && (
+                            <p className="text-sm text-muted-foreground">Owner: {device.owner_name}</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Rest of the compliance check UI - only show if device is selected */}
         {selectedDevice && (
           <div className="space-y-6">
             <Card>

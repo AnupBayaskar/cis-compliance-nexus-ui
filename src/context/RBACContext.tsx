@@ -1,5 +1,6 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 export interface User {
   id: string;
@@ -7,6 +8,8 @@ export interface User {
   email: string;
   role: 'super_admin' | 'admin' | 'user';
   isTeamAdmin?: boolean;
+  organizationId?: string;
+  teamId?: string;
 }
 
 export interface Team {
@@ -15,6 +18,7 @@ export interface Team {
   description: string;
   users: User[];
   adminId?: string;
+  organizationId: string;
 }
 
 export interface Organization {
@@ -28,25 +32,66 @@ interface RBACContextType {
   organizations: Organization[];
   currentUser: User | null;
   createOrganization: (org: Omit<Organization, 'id' | 'teams'>) => void;
-  createTeam: (orgId: string, team: Omit<Team, 'id' | 'users'>) => void;
-  addUserToTeam: (orgId: string, teamId: string, user: Omit<User, 'id'>) => void;
+  createTeam: (orgId: string, team: Omit<Team, 'id' | 'users' | 'organizationId'>) => void;
+  addUserToTeam: (orgId: string, teamId: string, user: Omit<User, 'id' | 'organizationId' | 'teamId'>) => void;
   deleteOrganization: (orgId: string) => void;
   deleteTeam: (orgId: string, teamId: string) => void;
   deleteUser: (orgId: string, teamId: string, userId: string) => void;
   toggleTeamAdmin: (orgId: string, teamId: string, userId: string) => void;
   setCurrentUser: (user: User) => void;
+  getCurrentUserTeams: () => Team[];
+  getUserByEmail: (email: string, password: string) => User | null;
 }
 
 const RBACContext = createContext<RBACContextType | undefined>(undefined);
 
 export const RBACProvider = ({ children }: { children: ReactNode }) => {
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>({
-    id: '1',
-    name: 'Super Admin',
-    email: 'admin@smartedge.in',
-    role: 'super_admin'
+  const { user: authUser } = useAuth();
+  const [organizations, setOrganizations] = useState<Organization[]>(() => {
+    const saved = localStorage.getItem('rbac_organizations');
+    return saved ? JSON.parse(saved) : [];
   });
+  
+  const [currentUser, setCurrentUserState] = useState<User | null>(() => {
+    const saved = localStorage.getItem('rbac_current_user');
+    return saved ? JSON.parse(saved) : {
+      id: '1',
+      name: 'Super Admin',
+      email: 'admin@smartedge.in',
+      role: 'super_admin'
+    };
+  });
+
+  // Save to localStorage whenever organizations change
+  useEffect(() => {
+    localStorage.setItem('rbac_organizations', JSON.stringify(organizations));
+  }, [organizations]);
+
+  // Save current user to localStorage
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('rbac_current_user', JSON.stringify(currentUser));
+    }
+  }, [currentUser]);
+
+  // Sync with auth user when it changes
+  useEffect(() => {
+    if (authUser) {
+      // Check if this user exists in our RBAC system
+      const rbacUser = getUserByEmail(authUser.email, ''); // We'll find by email since we have the auth token
+      if (rbacUser) {
+        setCurrentUserState(rbacUser);
+      } else if (authUser.email === 'admin@smartedge.in') {
+        // Default super admin
+        setCurrentUserState({
+          id: '1',
+          name: 'Super Admin',
+          email: 'admin@smartedge.in',
+          role: 'super_admin'
+        });
+      }
+    }
+  }, [authUser, organizations]);
 
   const createOrganization = (org: Omit<Organization, 'id' | 'teams'>) => {
     const newOrg: Organization = {
@@ -57,11 +102,12 @@ export const RBACProvider = ({ children }: { children: ReactNode }) => {
     setOrganizations(prev => [...prev, newOrg]);
   };
 
-  const createTeam = (orgId: string, team: Omit<Team, 'id' | 'users'>) => {
+  const createTeam = (orgId: string, team: Omit<Team, 'id' | 'users' | 'organizationId'>) => {
     const newTeam: Team = {
       ...team,
       id: Date.now().toString(),
-      users: []
+      users: [],
+      organizationId: orgId
     };
     setOrganizations(prev => prev.map(org => 
       org.id === orgId 
@@ -70,10 +116,12 @@ export const RBACProvider = ({ children }: { children: ReactNode }) => {
     ));
   };
 
-  const addUserToTeam = (orgId: string, teamId: string, user: Omit<User, 'id'>) => {
+  const addUserToTeam = (orgId: string, teamId: string, user: Omit<User, 'id' | 'organizationId' | 'teamId'>) => {
     const newUser: User = {
       ...user,
-      id: Date.now().toString()
+      id: Date.now().toString(),
+      organizationId: orgId,
+      teamId: teamId
     };
     setOrganizations(prev => prev.map(org => 
       org.id === orgId 
@@ -142,6 +190,59 @@ export const RBACProvider = ({ children }: { children: ReactNode }) => {
     ));
   };
 
+  const setCurrentUser = (user: User) => {
+    setCurrentUserState(user);
+  };
+
+  const getCurrentUserTeams = (): Team[] => {
+    if (!currentUser) return [];
+    
+    if (currentUser.role === 'super_admin') {
+      // Super admin can see all teams
+      return organizations.flatMap(org => org.teams);
+    }
+    
+    if (currentUser.role === 'admin') {
+      // Admin can see teams in their organization
+      const userOrg = organizations.find(org => org.id === currentUser.organizationId);
+      return userOrg ? userOrg.teams : [];
+    }
+    
+    if (currentUser.role === 'user') {
+      // Regular user can only see their own team
+      const userTeam = organizations
+        .flatMap(org => org.teams)
+        .find(team => team.id === currentUser.teamId);
+      return userTeam ? [userTeam] : [];
+    }
+    
+    return [];
+  };
+
+  const getUserByEmail = (email: string, password: string): User | null => {
+    // Check super admin
+    if (email === 'admin@smartedge.in') {
+      return {
+        id: '1',
+        name: 'Super Admin',
+        email: 'admin@smartedge.in',
+        role: 'super_admin'
+      };
+    }
+
+    // Check users in organizations
+    for (const org of organizations) {
+      for (const team of org.teams) {
+        const user = team.users.find(u => u.email === email);
+        if (user) {
+          return user;
+        }
+      }
+    }
+    
+    return null;
+  };
+
   return (
     <RBACContext.Provider value={{
       organizations,
@@ -153,7 +254,9 @@ export const RBACProvider = ({ children }: { children: ReactNode }) => {
       deleteTeam,
       deleteUser,
       toggleTeamAdmin,
-      setCurrentUser
+      setCurrentUser,
+      getCurrentUserTeams,
+      getUserByEmail
     }}>
       {children}
     </RBACContext.Provider>
