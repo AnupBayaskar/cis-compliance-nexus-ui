@@ -31,9 +31,11 @@ export interface Organization {
 interface RBACContextType {
   organizations: Organization[];
   currentUser: User | null;
+  unassignedUsers: User[];
   createOrganization: (org: Omit<Organization, 'id' | 'teams'>) => void;
   createTeam: (orgId: string, team: Omit<Team, 'id' | 'users' | 'organizationId'>) => void;
   addUserToTeam: (orgId: string, teamId: string, user: Omit<User, 'id' | 'organizationId' | 'teamId'>) => void;
+  assignUnassignedUserToTeam: (userId: string, orgId: string, teamId: string) => void;
   deleteOrganization: (orgId: string) => void;
   deleteTeam: (orgId: string, teamId: string) => void;
   deleteUser: (orgId: string, teamId: string, userId: string) => void;
@@ -41,6 +43,8 @@ interface RBACContextType {
   setCurrentUser: (user: User) => void;
   getCurrentUserTeams: () => Team[];
   getUserByEmail: (email: string, password: string) => User | null;
+  getCurrentUserTeam: () => Team | null;
+  getUnassignedUsers: () => User[];
 }
 
 const RBACContext = createContext<RBACContextType | undefined>(undefined);
@@ -49,6 +53,11 @@ export const RBACProvider = ({ children }: { children: ReactNode }) => {
   const { user: authUser } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>(() => {
     const saved = localStorage.getItem('rbac_organizations');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  const [unassignedUsers, setUnassignedUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem('unassigned_users');
     return saved ? JSON.parse(saved) : [];
   });
   
@@ -66,6 +75,11 @@ export const RBACProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     localStorage.setItem('rbac_organizations', JSON.stringify(organizations));
   }, [organizations]);
+
+  // Save unassigned users to localStorage
+  useEffect(() => {
+    localStorage.setItem('unassigned_users', JSON.stringify(unassignedUsers));
+  }, [unassignedUsers]);
 
   // Save current user to localStorage
   useEffect(() => {
@@ -89,6 +103,18 @@ export const RBACProvider = ({ children }: { children: ReactNode }) => {
           email: 'admin@smartedge.in',
           role: 'super_admin'
         });
+      } else {
+        // Check if it's a registered user (self-signup)
+        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+        const registeredUser = registeredUsers.find((u: any) => u.email === authUser.email);
+        if (registeredUser) {
+          setCurrentUserState({
+            id: registeredUser.user_id,
+            name: registeredUser.name,
+            email: registeredUser.email,
+            role: 'user'
+          });
+        }
       }
     }
   }, [authUser, organizations]);
@@ -135,6 +161,34 @@ export const RBACProvider = ({ children }: { children: ReactNode }) => {
           }
         : org
     ));
+  };
+
+  const assignUnassignedUserToTeam = (userId: string, orgId: string, teamId: string) => {
+    const userToAssign = unassignedUsers.find(u => u.id === userId);
+    if (!userToAssign) return;
+
+    // Add user to team
+    const assignedUser: User = {
+      ...userToAssign,
+      organizationId: orgId,
+      teamId: teamId
+    };
+
+    setOrganizations(prev => prev.map(org => 
+      org.id === orgId 
+        ? {
+            ...org,
+            teams: org.teams.map(team => 
+              team.id === teamId 
+                ? { ...team, users: [...team.users, assignedUser] }
+                : team
+            )
+          }
+        : org
+    ));
+
+    // Remove from unassigned users
+    setUnassignedUsers(prev => prev.filter(u => u.id !== userId));
   };
 
   const deleteOrganization = (orgId: string) => {
@@ -219,6 +273,14 @@ export const RBACProvider = ({ children }: { children: ReactNode }) => {
     return [];
   };
 
+  const getCurrentUserTeam = (): Team | null => {
+    if (!currentUser || currentUser.role !== 'user') return null;
+    
+    return organizations
+      .flatMap(org => org.teams)
+      .find(team => team.id === currentUser.teamId) || null;
+  };
+
   const getUserByEmail = (email: string, password: string): User | null => {
     // Check super admin
     if (email === 'admin@smartedge.in') {
@@ -243,20 +305,28 @@ export const RBACProvider = ({ children }: { children: ReactNode }) => {
     return null;
   };
 
+  const getUnassignedUsers = (): User[] => {
+    return unassignedUsers;
+  };
+
   return (
     <RBACContext.Provider value={{
       organizations,
       currentUser,
+      unassignedUsers,
       createOrganization,
       createTeam,
       addUserToTeam,
+      assignUnassignedUserToTeam,
       deleteOrganization,
       deleteTeam,
       deleteUser,
       toggleTeamAdmin,
       setCurrentUser,
       getCurrentUserTeams,
-      getUserByEmail
+      getUserByEmail,
+      getCurrentUserTeam,
+      getUnassignedUsers
     }}>
       {children}
     </RBACContext.Provider>

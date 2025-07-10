@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface AuthContextType {
@@ -130,10 +131,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email
     };
 
-    // Store user in registered users list
-    const newUser = { ...userData, password, phone };
+    // Store user in registered users list with default role "user"
+    const newUser = { ...userData, password, phone, role: 'user' };
     existingUsers.push(newUser);
     localStorage.setItem('registeredUsers', JSON.stringify(existingUsers));
+
+    // Also add to unassigned users list for admin to assign to teams
+    const unassignedUsers = JSON.parse(localStorage.getItem('unassigned_users') || '[]');
+    const unassignedUser = {
+      id: userData.user_id,
+      name: userData.name,
+      email: userData.email,
+      role: 'user'
+    };
+    unassignedUsers.push(unassignedUser);
+    localStorage.setItem('unassigned_users', JSON.stringify(unassignedUsers));
 
     setToken(mockToken);
     setUser(userData);
