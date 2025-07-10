@@ -19,7 +19,6 @@ import CreateOrganizationModal from './CreateOrganizationModal';
 import CreateTeamModal from './CreateTeamModal';
 import AddUserModal from './AddUserModal';
 import ConfirmationDialog from './ConfirmationDialog';
-import UnassignedUsersSection from './UnassignedUsersSection';
 
 const AdminDashboard = () => {
   const { 
@@ -143,9 +142,6 @@ const AdminDashboard = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* Unassigned Users Section */}
-        <UnassignedUsersSection />
 
         {/* Organizations */}
         <div className="space-y-6">
