@@ -227,9 +227,14 @@ const Profile = () => {
               Welcome back, {user.name}
             </p>
           </div>
-          <Button variant="outline" onClick={logout}>
-            Logout
-          </Button>
+          <div className="flex items-center space-x-3">
+            <Button variant="outline" onClick={() => navigate('/admin')}>
+              Admin Panel
+            </Button>
+            <Button variant="outline" onClick={logout}>
+              Logout
+            </Button>
+          </div>
         </div>
 
         {/* User Information Section */}
