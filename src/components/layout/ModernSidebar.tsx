@@ -2,34 +2,25 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/context/ThemeContext';
-import { useRBAC } from '@/context/RBACContext';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Home, FileText, CheckCircle, User, Moon, Sun, Save, Settings } from 'lucide-react';
+import { Home, FileText, CheckCircle, User, Moon, Sun, Save } from 'lucide-react';
+
+const navigationItems = [
+  { title: 'Home', url: '/', icon: Home },
+  { title: 'View Benchmarks', url: '/benchmarks', icon: FileText },
+  { title: 'Compliance Check', url: '/compliance', icon: CheckCircle },
+    { title: 'Saved Configurations', url: '/saved-configurations', icon: Save },
+  { title: 'User Profile', url: '/profile', icon: User },
+];
 
 const ModernSidebar = () => {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
-  const { currentUser } = useRBAC();
-
-  // Define all navigation items with role requirements
-  const allNavigationItems = [
-    { title: 'Home', url: '/', icon: Home, roles: ['super_admin', 'admin', 'user'] },
-    { title: 'View Benchmarks', url: '/benchmarks', icon: FileText, roles: ['super_admin', 'admin'] },
-    { title: 'Compliance Check', url: '/compliance', icon: CheckCircle, roles: ['super_admin', 'admin'] },
-    { title: 'Saved Configurations', url: '/saved-configurations', icon: Save, roles: ['super_admin', 'admin'] },
-    { title: 'Admin Panel', url: '/admin', icon: Settings, roles: ['super_admin', 'admin'] },
-    { title: 'User Profile', url: '/profile', icon: User, roles: ['super_admin', 'admin', 'user'] },
-  ];
-
-  // Filter navigation items based on current user's role
-  const navigationItems = allNavigationItems.filter(item => 
-    !currentUser || item.roles.includes(currentUser.role)
-  );
 
   return (
     <TooltipProvider>

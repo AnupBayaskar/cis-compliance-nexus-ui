@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface AuthContextType {
@@ -34,66 +35,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Check if it's the super admin
-    if (email === 'admin@smartedge.in' && password === 'admin123') {
-      const mockToken = 'mock-jwt-token-' + Date.now();
-      const userData = {
-        user_id: '1',
-        name: 'Super Admin',
-        email: 'admin@smartedge.in'
-      };
-
-      setToken(mockToken);
-      setUser(userData);
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify(userData));
-      
-      return { user: userData };
-    }
-    
-    // Check if user exists in localStorage (registered users)
+    // Check if user exists in localStorage
     const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
     const existingUser = existingUsers.find((u: any) => u.email === email && u.password === password);
     
     if (!existingUser) {
-      // Check RBAC users (users created by admins)
-      const rbacOrganizations = JSON.parse(localStorage.getItem('rbac_organizations') || '[]');
-      let rbacUser = null;
-      
-      for (const org of rbacOrganizations) {
-        for (const team of org.teams) {
-          const foundUser = team.users.find((u: any) => u.email === email);
-          if (foundUser) {
-            rbacUser = foundUser;
-            break;
-          }
-        }
-        if (rbacUser) break;
-      }
-      
-      if (!rbacUser) {
-        throw new Error('Invalid email or password');
-      }
-      
-      // For RBAC users, we'll use a simple password (since we don't store passwords for them)
-      // In a real app, you'd have proper password hashing
-      if (password !== 'password123') {
-        throw new Error('Invalid email or password');
-      }
-      
-      const mockToken = 'mock-jwt-token-' + Date.now();
-      const userData = {
-        user_id: rbacUser.id,
-        name: rbacUser.name,
-        email: rbacUser.email
-      };
-
-      setToken(mockToken);
-      setUser(userData);
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify(userData));
-      
-      return { user: userData };
+      throw new Error('Invalid email or password');
     }
 
     const mockToken = 'mock-jwt-token-' + Date.now();
