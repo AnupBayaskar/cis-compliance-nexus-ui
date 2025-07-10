@@ -2,17 +2,17 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface AuthContextType {
-  user: { user_id: string; name: string; email: string } | null;
+  user: { user_id: string; name: string; email: string; role: string } | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<{ user: { user_id: string; name: string; email: string } }>;
-  register: (name: string, email: string, password: string, phone?: string) => Promise<{ user: { user_id: string; name: string; email: string } }>;
+  login: (email: string, password: string) => Promise<{ user: { user_id: string; name: string; email: string; role: string } }>;
+  register: (name: string, email: string, password: string, phone?: string) => Promise<{ user: { user_id: string; name: string; email: string; role: string } }>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<{ user_id: string; name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ user_id: string; name: string; email: string; role: string } | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,6 +21,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (storedToken && storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
+        // Ensure role exists, default to 'user' if not present for backward compatibility
+        if (!parsedUser.role) {
+          parsedUser.role = 'user';
+        }
         setToken(storedToken);
         setUser(parsedUser);
       } catch (error) {
@@ -47,7 +51,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userData = {
       user_id: existingUser.user_id,
       name: existingUser.name,
-      email: existingUser.email
+      email: existingUser.email,
+      role: existingUser.role || 'user' // Default to 'user' role if not set
     };
 
     setToken(mockToken);
@@ -74,7 +79,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userData = {
       user_id: 'user-' + Date.now(),
       name,
-      email
+      email,
+      role: 'user' // Default role for new registrations
     };
 
     // Store user in registered users list
