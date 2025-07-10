@@ -11,6 +11,7 @@ import ModernNavbar from "@/components/layout/ModernNavbar";
 import Home from "./pages/Home";
 import Benchmarks from "./pages/Benchmarks";
 import Compliance from "./pages/Compliance";
+import ComplianceDetails from "./pages/ComplianceDetails";
 import TeamManagement from "./pages/TeamManagement";
 import Organization from "./pages/Organization";
 import Auth from "./pages/Auth";
@@ -42,6 +43,7 @@ const App = () => (
                   <Route path="/" element={<Home />} />
                   <Route path="/benchmarks" element={<Benchmarks />} />
                   <Route path="/compliance" element={<Compliance />} />
+                  <Route path="/compliance-details" element={<ComplianceDetails />} />
                   <Route path="/team-management" element={<TeamManagement />} />
                   <Route path="/organization" element={<Organization />} />
                   <Route path="/auth" element={<Auth />} />
