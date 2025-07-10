@@ -2,9 +2,51 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Shield, FileText, Zap, Users, Globe, ArrowRight } from 'lucide-react';
+import { CheckCircle, Shield, FileText, Zap, Users, Globe, ArrowRight, Building2, UsersRound, ClipboardCheck } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const Home = () => {
+  const { user } = useAuth();
+
+  const getRoleButton = () => {
+    if (!user) return null;
+
+    switch (user.role) {
+      case 'user':
+        return (
+          <Button size="lg" asChild className="group min-w-[220px] h-14 text-lg bg-brand-green hover:bg-brand-green/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <Link to="/compliance" className="flex items-center space-x-2">
+              <ClipboardCheck className="h-5 w-5" />
+              <span>Mark Compliance</span>
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </Button>
+        );
+      case 'admin':
+        return (
+          <Button size="lg" asChild className="group min-w-[220px] h-14 text-lg bg-brand-green hover:bg-brand-green/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <Link to="/team-management" className="flex items-center space-x-2">
+              <UsersRound className="h-5 w-5" />
+              <span>Manage Team</span>
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </Button>
+        );
+      case 'superadmin':
+        return (
+          <Button size="lg" asChild className="group min-w-[220px] h-14 text-lg bg-brand-green hover:bg-brand-green/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <Link to="/organization" className="flex items-center space-x-2">
+              <Building2 className="h-5 w-5" />
+              <span>Manage Organization</span>
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </Button>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -15,24 +57,18 @@ const Home = () => {
         <div className="relative z-10 max-w-4xl mx-auto text-center px-6 animate-in">
           <div className="space-y-8">
             <h1 className="text-6xl md:text-8xl font-bold leading-tight">
-              <span className="gradient-text animate-float">CIS Web Compliance</span>
+              <span className="gradient-text animate-float">Governar</span>
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Professional benchmark compliance platform for enterprise security excellence
             </p>
             
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-8">
-              <Button size="lg" asChild className="group min-w-[220px] h-14 text-lg bg-brand-green hover:bg-brand-green/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+              {getRoleButton()}
+              <Button size="lg" variant="outline" asChild className="group min-w-[220px] h-14 text-lg border-brand-green/20 hover:bg-brand-green/10 hover:text-brand-green hover:border-brand-green/40 transition-all duration-300 hover:scale-105">
                 <Link to="/benchmarks" className="flex items-center space-x-2">
                   <FileText className="h-5 w-5" />
                   <span>View Benchmarks</span>
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="group min-w-[220px] h-14 text-lg border-brand-green/20 hover:bg-brand-green/10 hover:text-brand-green hover:border-brand-green/40 transition-all duration-300 hover:scale-105">
-                <Link to="/compliance" className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5" />
-                  <span>Compliance Check</span>
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>

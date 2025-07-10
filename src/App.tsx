@@ -11,12 +11,15 @@ import ModernNavbar from "@/components/layout/ModernNavbar";
 import Home from "./pages/Home";
 import Benchmarks from "./pages/Benchmarks";
 import Compliance from "./pages/Compliance";
+import TeamManagement from "./pages/TeamManagement";
+import Organization from "./pages/Organization";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Reports from "./pages/Reports";
 import SavedConfigurations from "./pages/SavedConfigurations";
 import { ConfigurationProvider } from './context/ConfigurationContext';
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -39,6 +42,8 @@ const App = () => (
                   <Route path="/" element={<Home />} />
                   <Route path="/benchmarks" element={<Benchmarks />} />
                   <Route path="/compliance" element={<Compliance />} />
+                  <Route path="/team-management" element={<TeamManagement />} />
+                  <Route path="/organization" element={<Organization />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/reports" element={<Reports />} />
