@@ -10,8 +10,7 @@ import {
   Sun,
   Menu,
   X,
-  ExternalLink,
-  Settings
+  ExternalLink
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -23,7 +22,6 @@ const Sidebar = ({ isOpen, setIsOpen, isDark, setIsDark }) => {
     { icon: FileText, label: 'View Benchmarks', path: '/benchmarks' },
     { icon: CheckSquare, label: 'Compliance Check', path: '/compliance' },
     { icon: User, label: 'User Profile', path: '/profile' },
-    { icon: Settings, label: 'Admin Panel', path: '/admin' },
   ];
 
   const isActivePath = (path) => location.pathname === path;
@@ -123,7 +121,7 @@ const Sidebar = ({ isOpen, setIsOpen, isDark, setIsDark }) => {
             >
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               <span className="font-medium">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
-            </div>
+            </button>
           </div>
         </nav>
 
