@@ -102,7 +102,7 @@ const Auth = () => {
     });
   };
 
-  // Debug: Show current user/tokendo that
+  // Debug: Show current user/token
   const { user, token } = useAuth();
   console.log("[Auth.tsx] Current user:", user, "token:", token);
 

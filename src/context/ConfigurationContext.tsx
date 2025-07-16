@@ -1,3 +1,4 @@
+
 // src/context/ConfigurationContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -69,7 +70,7 @@ export const ConfigurationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Fetch configurations on mount if user and token are available
   useEffect(() => {
-    if (user && token && user.user_id) {
+    if (user && token && user.id) {
       fetchConfigurations();
     }
   }, [user, token]);

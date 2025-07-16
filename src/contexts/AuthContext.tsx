@@ -15,9 +15,10 @@ export interface User {
 export interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  token: string | null;
+  login: (email: string, password: string) => Promise<{ user: User } | null>;
   logout: () => void;
-  register: (name: string, email: string, password: string, role?: string, organizationId?: string) => Promise<void>;
+  register: (name: string, email: string, password: string, phone?: string) => Promise<{ user: User } | null>;
   loading: boolean;
 }
 
@@ -76,6 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const API_BASE_URL = "http://localhost:3000";
@@ -85,12 +87,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     // On mount, check for token and fetch profile
-    const token = getToken();
-    if (token) {
+    const storedToken = getToken();
+    if (storedToken) {
+      setToken(storedToken);
       fetch(`${API_BASE_URL}/auth/profile`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${storedToken}`,
         },
       })
         .then((res) => {
@@ -107,6 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         })
         .catch(() => {
           setUser(null);
+          setToken(null);
           localStorage.removeItem("governer-token");
         })
         .finally(() => setLoading(false));
@@ -129,7 +133,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error("Invalid credentials");
       }
       const data = await res.json();
-      localStorage.setItem("governer-token", data.accessToken);
+      const accessToken = data.accessToken;
+      localStorage.setItem("governer-token", accessToken);
+      setToken(accessToken);
       
       // Ensure user has role property
       const userData = {
@@ -137,6 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         role: data.user.role || 'user'
       };
       setUser(userData);
+      return { user: userData };
     } finally {
       setLoading(false);
     }
@@ -147,13 +154,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     name: string,
     email: string,
     password: string,
-    role?: string,
-    organizationId?: string
+    phone?: string
   ) => {
     setLoading(true);
     try {
-      // Default to user if no role is provided
-      const regRole = role || "user";
       const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -161,14 +165,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           name,
           email,
           password,
-          role: regRole,
-          organizationId,
+          phone,
         }),
       });
       if (!res.ok) {
         const error = await res.text();
         throw new Error(error || "Registration failed");
       }
+      const data = await res.json();
+      const accessToken = data.accessToken;
+      localStorage.setItem("governer-token", accessToken);
+      setToken(accessToken);
+      
+      // Ensure user has role property
+      const userData = {
+        ...data.user,
+        role: data.user.role || 'user'
+      };
+      setUser(userData);
+      return { user: userData };
     } finally {
       setLoading(false);
     }
@@ -176,12 +191,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem("governer-token");
   };
 
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
+    token,
     login,
     logout,
     register,
