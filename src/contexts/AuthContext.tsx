@@ -1,5 +1,24 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { User, AuthContextType, UserRole } from "../types/auth";
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  organizationId?: string;
+  organizationName?: string;
+  teams?: string[];
+}
+
+export interface AuthContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  register: (name: string, email: string, password: string, role?: string, organizationId?: string) => Promise<void>;
+  loading: boolean;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -78,7 +97,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           return res.json();
         })
         .then((data) => {
-          setUser(data);
+          // Ensure user has role property
+          const userData = {
+            ...data,
+            role: data.role || 'user'
+          };
+          setUser(userData);
         })
         .catch(() => {
           setUser(null);
@@ -105,7 +129,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       const data = await res.json();
       localStorage.setItem("governer-token", data.accessToken);
-      setUser(data.user);
+      
+      // Ensure user has role property
+      const userData = {
+        ...data.user,
+        role: data.user.role || 'user'
+      };
+      setUser(userData);
     } finally {
       setLoading(false);
     }
@@ -121,8 +151,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   ) => {
     setLoading(true);
     try {
-      // Default to super-admin if no role is provided (for initial setup)
-      const regRole = role || "super-admin";
+      // Default to user if no role is provided
+      const regRole = role || "user";
       const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -138,10 +168,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const error = await res.text();
         throw new Error(error || "Registration failed");
       }
-      // Optionally, auto-login after registration:
-      // const data = await res.json();
-      // localStorage.setItem('governer-token', data.accessToken);
-      // setUser(data.user);
     } finally {
       setLoading(false);
     }

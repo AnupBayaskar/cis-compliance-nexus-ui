@@ -12,6 +12,8 @@ import Home from "./pages/Home";
 import TeamSpace from "./pages/TeamSpace";
 import DeviceSpace from "./pages/DeviceSpace";
 import ComplianceSpace from "./pages/ComplianceSpace";
+import Compliance from "./pages/Compliance";
+import ComplianceDetails from "./pages/ComplianceDetails";
 import ValidationSpace from "./pages/ValidationSpace";
 import ReportsSpace from "./pages/ReportsSpace";
 import Profile from "./pages/Profile";
@@ -37,6 +39,8 @@ const App = () => (
                   <Route path="/team-space" element={<TeamSpace />} />
                   <Route path="/device-space" element={<DeviceSpace />} />
                   <Route path="/compliance-space" element={<ComplianceSpace />} />
+                  <Route path="/compliance" element={<Compliance />} />
+                  <Route path="/compliance-details" element={<ComplianceDetails />} />
                   <Route path="/validation-space" element={<ValidationSpace />} />
                   <Route path="/reports-space" element={<ReportsSpace />} />
                   <Route path="/profile" element={<Profile />} />
