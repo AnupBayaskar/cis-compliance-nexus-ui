@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppSidebar } from "@/components/AppSidebar";
-import Navbar from "@/components/Navbar";
+import { Navbar } from "@/components/Navbar";
 import { MemberPanel } from "@/components/MemberPanel";
 import Home from "./pages/Home";
 import ComplianceSpace from "./pages/ComplianceSpace";
