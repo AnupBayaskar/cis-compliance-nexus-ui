@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 export interface User {
@@ -18,7 +17,7 @@ export interface AuthContextType {
   token: string | null;
   login: (email: string, password: string) => Promise<{ user: User } | null>;
   logout: () => void;
-  register: (name: string, email: string, password: string, phone?: string) => Promise<{ user: User } | null>;
+  register: (name: string, email: string, password: string, role?: string, organizationId?: string) => Promise<{ user: User } | null>;
   loading: boolean;
 }
 
@@ -154,7 +153,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     name: string,
     email: string,
     password: string,
-    phone?: string
+    role?: string,
+    organizationId?: string
   ) => {
     setLoading(true);
     try {
@@ -165,7 +165,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           name,
           email,
           password,
-          phone,
+          role,
+          organizationId,
         }),
       });
       if (!res.ok) {
@@ -180,7 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Ensure user has role property
       const userData = {
         ...data.user,
-        role: data.user.role || 'user'
+        role: data.user.role || role || 'user'
       };
       setUser(userData);
       return { user: userData };
