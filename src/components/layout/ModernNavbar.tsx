@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { ExternalLink, User, HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 import Modal from '@/components/ui/modal';

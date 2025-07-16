@@ -1,6 +1,6 @@
 // src/context/ConfigurationContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
